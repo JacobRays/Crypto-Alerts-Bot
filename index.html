@@ -10,7 +10,6 @@
   <meta name="telegram-web-app" content="true">
 
   <style>
-    /* Reset & base */
     * {
       margin: 0;
       padding: 0;
@@ -18,25 +17,50 @@
     }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #f1c40f; /* gold text */
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
+      color: #f1c40f;
       min-height: 100vh;
-      background: url('https://i.ibb.co/7N4Fkgk/bitcoin-bg.jpg') no-repeat center center fixed;
+      background: url('https://i.ibb.co/z8SN4L3/golden-bitcoin-bg.jpg') no-repeat center center fixed;
       background-size: cover;
       position: relative;
     }
-    /* Dark overlay on top of bitcoin bg */
     body::before {
       content: "";
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.75);
       z-index: 0;
     }
 
-    /* Compact Telegram-like header */
+    /* 🔄 Loading Screen */
+    #loader {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 9999;
+    }
+    #loader img {
+      width: 100px;
+      height: 100px;
+      animation: spin 2s linear infinite;
+    }
+    #loader p {
+      margin-top: 1rem;
+      color: #f1c40f;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Header */
     header {
       position: fixed;
       top: 0;
@@ -55,7 +79,7 @@
     .container {
       position: relative;
       z-index: 1;
-      margin-top: 4rem; /* below header */
+      margin-top: 4rem;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -108,9 +132,16 @@
   </style>
 </head>
 <body>
+  <!-- 🔄 Loading Screen -->
+  <div id="loader">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg" alt="Bitcoin Logo">
+    <p>Loading Crypto Alerts...</p>
+  </div>
+
+  <!-- Main Content -->
   <header>🚀 Crypto Alerts Bot</header>
 
-  <div class="container">
+  <div class="container" style="display:none;" id="app">
     <div class="card">
       <h1>Welcome</h1>
       <p>Your gateway to presale alerts, airdrops, and VIP crypto signals.</p>
@@ -137,5 +168,15 @@
       </footer>
     </div>
   </div>
+
+  <script>
+    // Hide loader after 2.5 seconds
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("app").style.display = "block";
+      }, 2500);
+    });
+  </script>
 </body>
 </html>
