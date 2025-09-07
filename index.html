@@ -2,26 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Crypto Alerts Bot</title>
+
+  <!-- 🟡 Telegram Mini App Meta Tags -->
+  <meta name="theme-color" content="#000000">
+  <meta name="telegram-web-app" content="true">
+
   <style>
-    body {
+    /* Reset & base */
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+    }
+    body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #000; /* black background */
-      color: #f1c40f;   /* gold text */
+      color: #f1c40f; /* gold text */
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background: url('https://i.ibb.co/7N4Fkgk/bitcoin-bg.jpg') no-repeat center center fixed;
+      background-size: cover;
+      position: relative;
+    }
+    /* Dark overlay on top of bitcoin bg */
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 0;
+    }
+
+    /* Compact Telegram-like header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 0.8rem;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #f1c40f;
+      z-index: 2;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      margin-top: 4rem; /* below header */
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
+      width: 100%;
+      padding: 1rem;
     }
     .card {
-      background: #111;
+      background: rgba(17, 17, 17, 0.9);
       padding: 2rem;
       border-radius: 16px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.8);
-      width: 90%;
+      width: 100%;
       max-width: 420px;
       text-align: center;
     }
@@ -62,30 +108,34 @@
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>🚀 Crypto Alerts Bot</h1>
-    <p>Your gateway to presale alerts, airdrops, and VIP crypto signals.</p>
+  <header>🚀 Crypto Alerts Bot</header>
 
-    <a href="https://t.me/CryptoSniper_Alerts_Bot" class="button">▶ Start Bot</a>
-    <a href="#features" class="button">✨ Features</a>
-    <a href="#vip" class="button">💎 VIP Access</a>
+  <div class="container">
+    <div class="card">
+      <h1>Welcome</h1>
+      <p>Your gateway to presale alerts, airdrops, and VIP crypto signals.</p>
 
-    <section id="features">
-      <h2>Features</h2>
-      <p>✔ Presale & airdrop alerts<br>
-         ✔ Real-time market updates<br>
-         ✔ Free + VIP options</p>
-    </section>
+      <a href="https://t.me/CryptoSniper_Alerts_Bot" class="button">▶ Start Bot</a>
+      <a href="#features" class="button">✨ Features</a>
+      <a href="#vip" class="button">💎 VIP Access</a>
 
-    <section id="vip">
-      <h2>VIP Membership</h2>
-      <p>Unlock premium signals, early alerts, and exclusive insights.</p>
-      <a href="https://t.me/CryptoSniper_Alerts_Bot" class="button">🔥 Join VIP</a>
-    </section>
+      <section id="features">
+        <h2>Features</h2>
+        <p>✔ Presale & airdrop alerts<br>
+           ✔ Real-time market updates<br>
+           ✔ Free + VIP options</p>
+      </section>
 
-    <footer>
-      <p>© 2025 Crypto Alerts Bot | Powered by Telegram</p>
-    </footer>
+      <section id="vip">
+        <h2>VIP Membership</h2>
+        <p>Unlock premium signals, early alerts, and exclusive insights.</p>
+        <a href="https://t.me/CryptoSniper_Alerts_Bot" class="button">🔥 Join VIP</a>
+      </section>
+
+      <footer>
+        <p>© 2025 Crypto Alerts Bot | Powered by Telegram</p>
+      </footer>
+    </div>
   </div>
 </body>
 </html>
