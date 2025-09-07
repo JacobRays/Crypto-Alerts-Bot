@@ -191,5 +191,33 @@
       }, 2500);
     });
   </script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand(); // makes the app fullscreen inside Telegram
+
+  // Get user data
+  const user = tg.initDataUnsafe?.user;
+
+  if (user) {
+    // Display greeting
+    const greeting = document.createElement("p");
+    greeting.textContent = `👋 Welcome, ${user.first_name || user.username}!`;
+    greeting.style.color = "#f1c40f";
+    greeting.style.fontSize = "1.1rem";
+    document.querySelector(".card").prepend(greeting);
+
+    // Example: send user data to your backend (Cloudflare Worker)
+    fetch("https://YOUR_WORKER_URL/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: user.id,
+        username: user.username,
+        first_name: user.first_name,
+      })
+    }).catch(err => console.error("Backend error:", err));
+  }
+</script>
 </body>
 </html>
