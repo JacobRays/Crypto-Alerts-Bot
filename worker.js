@@ -1,8 +1,7 @@
-const ADMIN_PASSWORD = "Premium01"; // <-- set a strong password here
-
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const ADMIN_PASSWORD = env.ADMIN_PASSWORD; // <-- set in Cloudflare dashboard as a secret
 
     // ========== ADMIN DASHBOARD ==========
     if (url.pathname.startsWith("/admin")) {
@@ -28,49 +27,23 @@ export default {
 
       // Main dashboard
       const list = await env.USER_DB.list();
-      let rows = "";
+      const users = [];
 
       for (const key of list.keys) {
         const userData = await env.USER_DB.get(key.name);
-        const user = JSON.parse(userData || "{}");
-        rows += `
-          <tr>
-            <td>${key.name.replace("user:", "")}</td>
-            <td>${user.username || "unknown"}</td>
-            <td>${user.vip ? "⭐ VIP" : "Free"}</td>
-            <td>
-              <form method="POST" action="/admin/toggle?id=${key.name.replace("user:", "")}&password=${ADMIN_PASSWORD}">
-                <button type="submit">${user.vip ? "Remove VIP" : "Make VIP"}</button>
-              </form>
-            </td>
-          </tr>`;
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          users.push({
+            id: key.name.replace("user:", ""),
+            username: parsed.username || "unknown",
+            vip: parsed.vip || false
+          });
+        }
       }
 
-      const html = `
-        <html>
-          <head>
-            <title>Admin Dashboard</title>
-            <style>
-              body { font-family: Arial, sans-serif; background:#111; color:#fff; }
-              h1 { color: gold; }
-              table { width:100%; border-collapse: collapse; margin-top:20px; }
-              th, td { border: 1px solid #444; padding: 8px; text-align:center; }
-              th { background: #222; color: gold; }
-              button { padding: 6px 12px; border:none; background:gold; color:black; cursor:pointer; }
-              button:hover { background:#e6b800; }
-            </style>
-          </head>
-          <body>
-            <h1>Crypto Alerts Admin</h1>
-            <p>Logged in with password ✅</p>
-            <table>
-              <tr><th>User ID</th><th>Username</th><th>Status</th><th>Action</th></tr>
-              ${rows}
-            </table>
-          </body>
-        </html>
-      `;
-      return new Response(html, { headers: { "Content-Type": "text/html" } });
+      return new Response(renderAdminPage(users, ADMIN_PASSWORD), {
+        headers: { "Content-Type": "text/html" }
+      });
     }
 
     // ========== USER REGISTRATION ==========
@@ -126,7 +99,6 @@ export default {
 
     // GET request: check user in KV
     if (request.method === "GET") {
-      const url = new URL(request.url);
       const userId = url.searchParams.get("id");
       if (!userId) return new Response("❌ No ID provided", { status: 400 });
 
@@ -139,6 +111,48 @@ export default {
 };
 
 // === HELPERS ===
+function renderAdminPage(users, adminPassword) {
+  const rows = users.map(user => `
+    <tr>
+      <td>${user.id}</td>
+      <td>${user.username}</td>
+      <td>${user.vip ? "⭐ VIP" : "Free"}</td>
+      <td>
+        <form method="POST" action="/admin/toggle?id=${user.id}&password=${encodeURIComponent(adminPassword)}">
+          <button type="submit">${user.vip ? "Remove VIP" : "Make VIP"}</button>
+        </form>
+      </td>
+    </tr>
+  `).join("");
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Admin Dashboard</title>
+      <style>
+        body { font-family: Arial, sans-serif; background:#111; color:#fff; }
+        h1 { color: gold; }
+        table { width:100%; border-collapse: collapse; margin-top:20px; }
+        th, td { border: 1px solid #444; padding: 8px; text-align:center; }
+        th { background: #222; color: gold; }
+        button { padding: 6px 12px; border:none; background:gold; color:black; cursor:pointer; }
+        button:hover { background:#e6b800; }
+      </style>
+    </head>
+    <body>
+      <h1>Crypto Alerts Admin</h1>
+      <p>Logged in ✅</p>
+      <table>
+        <tr><th>User ID</th><th>Username</th><th>Status</th><th>Action</th></tr>
+        ${rows || `<tr><td colspan="4">No users found</td></tr>`}
+      </table>
+    </body>
+    </html>
+  `;
+}
+
 async function sendMessage(env, chatId, text, replyMarkup = null) {
   const payload = { chat_id: chatId, text, parse_mode: "HTML" };
   if (replyMarkup) payload.reply_markup = replyMarkup;
