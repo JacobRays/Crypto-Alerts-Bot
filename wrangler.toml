@@ -1,5 +1,5 @@
-name = "crypto-alerts-bot"
-main = "worker.js"
+name              = "crypto-alerts-worker"
+main              = "worker.js"
 compatibility_date = "2024-09-01"
 
 kv_namespaces = [
