@@ -114,6 +114,78 @@ if (url.pathname === "/api/user" && request.method === "GET") {
       const userData = await env.USER_DB.get(`user:${userId}`);
       return new Response(userData || "❌ User not found");
     }
+    // ========== USER-FACING DASHBOARD ==========
+    if (url.pathname === "/app") {
+      const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Crypto Alerts Dashboard</title>
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: white;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+          }
+          .card {
+            background: #222;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px auto;
+            max-width: 400px;
+            box-shadow: 0 0 10px rgba(255,215,0,0.3);
+          }
+          .vip { color: gold; font-weight: bold; }
+          button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: gold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+          }
+          button:hover { background: #e6b800; }
+        </style>
+      </head>
+      <body>
+        <h1>🚀 Crypto Alerts</h1>
+        <div class="card">
+          <h2 id="username">Loading...</h2>
+          <p>Status: <span id="status">Checking...</span></p>
+          <button id="upgradeBtn">Upgrade to VIP ⭐</button>
+        </div>
+
+        <script>
+          const tg = window.Telegram.WebApp;
+          tg.expand();
+
+          const initDataUnsafe = tg.initDataUnsafe;
+          const userId = initDataUnsafe?.user?.id || "123";
+
+          fetch("/api/user?id=" + userId)
+            .then(res => res.json())
+            .then(user => {
+              document.getElementById("username").innerText = "👤 " + (user.username || "unknown");
+              document.getElementById("status").innerText = user.vip ? "⭐ VIP" : "Free";
+              if (user.vip) {
+                document.getElementById("upgradeBtn").style.display = "none";
+              }
+            });
+
+          document.getElementById("upgradeBtn").onclick = () => {
+            alert("🔒 Payment system coming soon!");
+          };
+        </script>
+      </body>
+      </html>`;
+      return new Response(html, { headers: { "Content-Type": "text/html" } });
+    }
 
     return new Response("Crypto Alerts Worker is running ✅");
   },
