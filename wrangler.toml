@@ -4,7 +4,7 @@ compatibility_date = "2024-09-01"
 
 [[kv_namespaces]]
 binding = "USER_DB"
-id = "5e9a5815f0ef4e50a7b44f289f4f8fe5"
+id = "77306c724f89400685ec6a210d672a2d"
 
 [observability]
   [observability.logs]
