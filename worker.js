@@ -19,7 +19,7 @@ export default {
         if (!existing) return new Response("❌ User not found", { status: 404 });
 
         let data = JSON.parse(existing);
-        data.vip = !data.vip; // toggle
+        data.vip = !data.vip; // toggle VIP
         await env.USER_DB.put(`user:${userId}`, JSON.stringify(data));
 
         return new Response("✅ VIP toggled");
@@ -134,20 +134,50 @@ function renderAdminPage(users, adminPassword) {
       <style>
         body { font-family: Arial, sans-serif; background:#111; color:#fff; }
         h1 { color: gold; }
-        table { width:100%; border-collapse: collapse; margin-top:20px; }
+        table { width:100%; border-collapse: collapse; margin-top:10px; }
         th, td { border: 1px solid #444; padding: 8px; text-align:center; }
         th { background: #222; color: gold; }
         button { padding: 6px 12px; border:none; background:gold; color:black; cursor:pointer; }
         button:hover { background:#e6b800; }
+        #searchBox {
+          padding: 8px;
+          width: 100%;
+          max-width: 300px;
+          margin-top: 10px;
+          border-radius: 6px;
+          border: none;
+        }
       </style>
     </head>
     <body>
       <h1>Crypto Alerts Admin</h1>
       <p>Logged in ✅</p>
-      <table>
+      <input type="text" id="searchBox" placeholder="Search by ID or username...">
+      <table id="usersTable">
         <tr><th>User ID</th><th>Username</th><th>Status</th><th>Action</th></tr>
         ${rows || `<tr><td colspan="4">No users found</td></tr>`}
       </table>
+
+      <script>
+        const searchBox = document.getElementById('searchBox');
+        const table = document.getElementById('usersTable');
+        searchBox.addEventListener('keyup', function() {
+          const filter = this.value.toLowerCase();
+          const rows = table.getElementsByTagName('tr');
+          for (let i = 1; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            if (cells.length > 0) {
+              const id = cells[0].textContent.toLowerCase();
+              const username = cells[1].textContent.toLowerCase();
+              if (id.includes(filter) || username.includes(filter)) {
+                rows[i].style.display = '';
+              } else {
+                rows[i].style.display = 'none';
+              }
+            }
+          }
+        });
+      </script>
     </body>
     </html>
   `;
