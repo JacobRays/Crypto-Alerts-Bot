@@ -1,7 +1,8 @@
+const ADMIN_PASSWORD = "Premium01"; // <-- set a strong password here
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const ADMIN_PASSWORD = env.ADMIN_PASSWORD; // <-- set in Cloudflare dashboard as a secret
 
     // ========== ADMIN DASHBOARD ==========
     if (url.pathname.startsWith("/admin")) {
@@ -19,7 +20,7 @@ export default {
         if (!existing) return new Response("❌ User not found", { status: 404 });
 
         let data = JSON.parse(existing);
-        data.vip = !data.vip; // toggle VIP
+        data.vip = !data.vip; // toggle
         await env.USER_DB.put(`user:${userId}`, JSON.stringify(data));
 
         return new Response("✅ VIP toggled");
