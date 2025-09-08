@@ -65,7 +65,15 @@ export default {
         }));
         return new Response("✅ User saved to KV!");
       }
+if (url.pathname === "/api/user" && request.method === "GET") {
+  const userId = url.searchParams.get("id");
+  if (!userId) return new Response("❌ No ID provided", { status: 400 });
 
+  const userData = await env.USER_DB.get(`user:${userId}`);
+  return new Response(userData || JSON.stringify({ vip: false, username: "unknown" }), {
+    headers: { "Content-Type": "application/json" }
+  });
+}
       // If Telegram Bot update
       if (update.message) {
         const msg = update.message;
