@@ -1,4 +1,4 @@
-name = "crypto-alerts-worker"
+name = "crypto-alerts-bot"
 main = "worker.js"
 compatibility_date = "2024-09-01"
 
