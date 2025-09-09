@@ -4,17 +4,17 @@ compatibility_date = "2025-09-09"
 type = "javascript"
 
 [vars]
-TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+TELEGRAM_BOT_TOKEN = "8209980143:AAEqYImLz5sniYx5cNCk0-yKX8wmiS9s9-g"
 COINGECKO_API = "https://api.coingecko.com/api/v3"
 TG_CHANNEL_IDS = "CHANNEL_ID_1,CHANNEL_ID_2"
 
 kv_namespaces = [
-  { binding = "USERS_KV", id = "YOUR_USERS_KV_ID" },
-  { binding = "ALERTS_KV", id = "YOUR_ALERTS_KV_ID" },
-  { binding = "SIGNALS_KV", id = "YOUR_SIGNALS_KV_ID" },
-  { binding = "MEMECOINS_KV", id = "YOUR_MEMECOINS_KV_ID" },
-  { binding = "EVENTS_KV", id = "YOUR_EVENTS_KV_ID" },
-  { binding = "WALLET_KV", id = "YOUR_WALLET_KV_ID" }
+  { binding = "USERS_KV", id = "77306c724f89400685ec6a210d672a2d" },
+  { binding = "ALERTS_KV", id = "09e25928aa8c4adeb0cc99a8481ded3d" },
+  { binding = "SIGNALS_KV", id = "84376fae8ff94a54977518562bf674de" },
+  { binding = "MEMECOINS_KV", id = "f6fda21fe13f4e099eb050a6618cfca9" },
+  { binding = "EVENTS_KV", id = "0969ce1bae744953ae0cf95b196e4c3e" },
+  { binding = "WALLET_KV", id = "9dc28206c6204d43ac6504a363dab517" }
 ]
 
 [triggers]
