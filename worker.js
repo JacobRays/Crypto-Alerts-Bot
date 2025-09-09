@@ -1,216 +1,277 @@
-// worker.js
-// === Crypto Alerts Worker ===
-// Handles user storage (KV), admin panel, user dashboard, and API endpoints.
-
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // ========= CONFIG =========
-    const ADMIN_PASS = "Premium01!";
-    const BASE_URL = "https://crypto-alerts-worker.premiumrays01.workers.dev";
-
-    // ========= ADMIN PANEL =========
-    if (url.pathname === "/admin") {
-      const password = url.searchParams.get("password");
-      if (password !== ADMIN_PASS) {
-        return new Response("Unauthorized", { status: 401 });
-      }
-
-      const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Admin Panel</title>
-        <style>
-          body { font-family: 'Segoe UI', Arial; background: #0d1117; color: #eee; padding: 20px; }
-          h1 { color: gold; }
-          input, button { padding: 10px; margin: 5px; border-radius: 6px; border: none; }
-          button { background: gold; cursor: pointer; font-weight: bold; }
-          button:hover { background: #e6b800; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #333; padding: 10px; text-align: center; }
-          th { background: #222; }
-          tr:nth-child(even) { background: #1a1a1a; }
-          .vip { color: gold; font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        <h1>⚡ Crypto Alerts Admin Panel</h1>
-
-        <form id="addUserForm">
-          <input type="text" id="userId" placeholder="Telegram User ID" required />
-          <input type="text" id="username" placeholder="Username" />
-          <button type="submit">Add User</button>
-        </form>
-
-        <button onclick="listUsers()">📋 Show Users</button>
-        <div id="users"></div>
-
-        <script>
-          async function listUsers() {
-            let res = await fetch("/api/users?password=${ADMIN_PASS}");
-            let users = await res.json();
-            let html = "<table><tr><th>ID</th><th>Username</th><th>Status</th><th>Action</th></tr>";
-            for (let u of users) {
-              html += "<tr>" +
-                "<td>" + u.id + "</td>" +
-                "<td>" + (u.username || '-') + "</td>" +
-                "<td>" + (u.vip ? "<span class='vip'>VIP</span>" : "Free") + "</td>" +
-                "<td><button onclick=\\"toggleVIP('" + u.id + "')\\">Toggle VIP</button></td>" +
-              "</tr>";
-            }
-            html += "</table>";
-            document.getElementById("users").innerHTML = html;
-          }
-
-          async function toggleVIP(id) {
-            await fetch("/api/toggleVIP?password=${ADMIN_PASS}&id=" + id, { method: "POST" });
-            listUsers();
-          }
-
-          document.getElementById("addUserForm").onsubmit = async (e) => {
-            e.preventDefault();
-            let userId = document.getElementById("userId").value;
-            let username = document.getElementById("username").value;
-            await fetch("/api/addUser?password=${ADMIN_PASS}", {
-              method: "POST",
-              body: JSON.stringify({ id: userId, username }),
-            });
-            alert("✅ User added");
-            listUsers();
-          };
-        </script>
-      </body>
-      </html>`;
-      return new Response(html, { headers: { "Content-Type": "text/html" } });
+    if (url.pathname === "/webhook") {
+      return handleTelegramWebhook(request, env);
+    }
+    if (url.pathname.startsWith("/admin")) {
+      return handleAdminPanel(request, env, url);
+    }
+    if (url.pathname.startsWith("/app")) {
+      return handleUserDashboard(request, env, request, url);
     }
 
-    // ========= API: LIST USERS =========
-    if (url.pathname === "/api/users") {
-      if (url.searchParams.get("password") !== ADMIN_PASS) {
-        return new Response("Unauthorized", { status: 401 });
-      }
-      const { keys } = await env.USER_DB.list();
-      let users = [];
-      for (let key of keys) {
-        let data = await env.USER_DB.get(key.name);
-        if (data) users.push(JSON.parse(data));
-      }
-      return Response.json(users);
-    }
+    return new Response("Crypto Alerts Worker Running ✅", { status: 200 });
+  },
 
-    // ========= API: ADD USER =========
-    if (url.pathname === "/api/addUser" && request.method === "POST") {
-      if (url.searchParams.get("password") !== ADMIN_PASS) {
-        return new Response("Unauthorized", { status: 401 });
-      }
-      let body = await request.json();
-      await env.USER_DB.put(body.id, JSON.stringify({
-        id: body.id,
-        username: body.username || "",
-        vip: false,
-        joinedAt: Date.now()
-      }));
-      return Response.json({ success: true });
-    }
-
-    // ========= API: TOGGLE VIP =========
-    if (url.pathname === "/api/toggleVIP" && request.method === "POST") {
-      if (url.searchParams.get("password") !== ADMIN_PASS) {
-        return new Response("Unauthorized", { status: 401 });
-      }
-      const id = url.searchParams.get("id");
-      let data = await env.USER_DB.get(id);
-      if (!data) return Response.json({ error: "User not found" }, { status: 404 });
-      let user = JSON.parse(data);
-      user.vip = !user.vip;
-      await env.USER_DB.put(id, JSON.stringify(user));
-      return Response.json({ success: true, vip: user.vip });
-    }
-
-    // ========= API: GET USER =========
-    if (url.pathname === "/api/user") {
-      const id = url.searchParams.get("id");
-      if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
-      let data = await env.USER_DB.get(id);
-      if (!data) return Response.json({ error: "User not found" }, { status: 404 });
-      return Response.json(JSON.parse(data));
-    }
-
-    // ========= USER DASHBOARD =========
-    if (url.pathname === "/app") {
-      const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Crypto Alerts Dashboard</title>
-        <script src="https://telegram.org/js/telegram-web-app.js"></script>
-        <style>
-          body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg,#0d1117,#161b22); color: #eee; margin: 0; padding: 20px; text-align: center; }
-          .card { background: #1f2937; padding: 20px; border-radius: 16px; margin: 20px auto; max-width: 400px; box-shadow: 0 0 15px rgba(255,215,0,0.2); }
-          h1 { color: gold; }
-          .vip { color: gold; font-weight: bold; }
-          button { margin-top: 15px; padding: 12px 24px; background: gold; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
-          button:hover { background: #e6b800; }
-        </style>
-      </head>
-      <body>
-        <h1>🚀 Crypto Alerts</h1>
-        <div class="card">
-          <h2 id="username">Loading...</h2>
-          <p>Status: <span id="status">Checking...</span></p>
-          <button id="upgradeBtn">Upgrade to VIP ⭐</button>
-        </div>
-
-        <script>
-          const tg = window.Telegram.WebApp;
-          tg.expand();
-
-          const initDataUnsafe = tg.initDataUnsafe;
-          const userId = initDataUnsafe?.user?.id || "123";
-
-          fetch("/api/user?id=" + userId)
-            .then(res => res.json())
-            .then(user => {
-              document.getElementById("username").innerText = "👤 " + (user.username || "Guest");
-              document.getElementById("status").innerText = user.vip ? "⭐ VIP" : "Free";
-              if (user.vip) {
-                document.getElementById("upgradeBtn").style.display = "none";
-              }
-            });
-
-          document.getElementById("upgradeBtn").onclick = () => {
-            alert("🔒 VIP payment system coming soon!");
-          };
-        </script>
-      </body>
-      </html>`;
-      return new Response(html, { headers: { "Content-Type": "text/html" } });
-    }
-
-    // ========= BOT START PAGE =========
-    if (url.pathname === "/start") {
-      const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Telegram Bot Launcher</title>
-        <meta charset="UTF-8">
-        <script src="https://telegram.org/js/telegram-web-app.js"></script>
-      </head>
-      <body>
-        <script>
-          const tg = window.Telegram.WebApp;
-          tg.openLink("${BASE_URL}/app");
-        </script>
-      </body>
-      </html>`;
-      return new Response(html, { headers: { "Content-Type": "text/html" } });
-    }
-
-    // ========= DEFAULT =========
-    return new Response("Crypto Alerts Worker is running ✅");
+  // CRON JOB every 5 minutes
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(checkAlerts(env));
   },
 };
+
+// =============================
+// TELEGRAM BOT HANDLER
+// =============================
+async function handleTelegramWebhook(request, env) {
+  const body = await request.json();
+  if (!body.message) return new Response("ok");
+
+  const chatId = body.message.chat.id;
+  const text = body.message.text || "";
+
+  if (text.startsWith("/start")) {
+    const keyboard = {
+      inline_keyboard: [
+        [
+          {
+            text: "🚀 Open Dashboard",
+            web_app: { url: `https://${env.WORKER_DOMAIN}/app?user=${chatId}` },
+          },
+        ],
+      ],
+    };
+
+    await sendTelegramMessage(
+      env.BOT_TOKEN,
+      chatId,
+      "Welcome to Crypto Alerts 🚀\nTap below to open your dashboard:",
+      keyboard
+    );
+
+    await env.USER_DB.put(
+      `user:${chatId}`,
+      JSON.stringify({ chatId, joinedAt: Date.now(), vip: false })
+    );
+
+    return new Response("ok");
+  }
+
+  if (text.startsWith("/help")) {
+    await sendTelegramMessage(
+      env.BOT_TOKEN,
+      chatId,
+      "Available commands:\n/start – Open your dashboard\n/help – This menu"
+    );
+    return new Response("ok");
+  }
+
+  return new Response("ok");
+}
+
+async function sendTelegramMessage(botToken, chatId, text, replyMarkup = null) {
+  const payload = { chat_id: chatId, text, parse_mode: "HTML" };
+  if (replyMarkup) payload.reply_markup = replyMarkup;
+
+  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+// =============================
+// USER DASHBOARD (Mini App)
+// =============================
+async function handleUserDashboard(request, env, req, url) {
+  const userId = url.searchParams.get("user");
+  let userData = await env.USER_DB.get(`user:${userId}`);
+  userData = userData ? JSON.parse(userData) : null;
+
+  if (!userData) {
+    return new Response("User not found. Please /start the bot first.", { status: 404 });
+  }
+
+  // Handle form submissions
+  if (req.method === "POST") {
+    const formData = await req.formData();
+    const action = formData.get("action");
+
+    if (action === "add") {
+      const id = Date.now().toString();
+      const symbol = formData.get("symbol").toLowerCase();
+      const target = parseFloat(formData.get("target"));
+      await env.USER_DB.put(
+        `alert:${userId}:${id}`,
+        JSON.stringify({ id, symbol, target, triggered: false })
+      );
+    } else if (action === "delete") {
+      await env.USER_DB.delete(`alert:${userId}:${formData.get("id")}`);
+    } else if (action === "edit") {
+      const id = formData.get("id");
+      const symbol = formData.get("symbol").toLowerCase();
+      const target = parseFloat(formData.get("target"));
+      await env.USER_DB.put(
+        `alert:${userId}:${id}`,
+        JSON.stringify({ id, symbol, target, triggered: false })
+      );
+    }
+
+    return Response.redirect(`/app?user=${userId}`, 303);
+  }
+
+  // Fetch user alerts
+  const list = await env.USER_DB.list({ prefix: `alert:${userId}:` });
+  const alerts = [];
+  for (const key of list.keys) {
+    const data = await env.USER_DB.get(key.name);
+    alerts.push(JSON.parse(data));
+  }
+
+  const vipStatus = userData.vip ? "🌟 VIP" : "Free User";
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Crypto Alerts Dashboard</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; background: #0d1117; color: white; }
+          .card { background: #161b22; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+          .btn { background: #238636; color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; display: inline-block; margin: 5px 0; }
+          input { padding: 8px; border-radius: 6px; border: none; margin: 5px; }
+          form { margin-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <h2>🚀 Crypto Alerts Dashboard</h2>
+        <div class="card">
+          <p><strong>User:</strong> ${userId}</p>
+          <p><strong>Status:</strong> ${vipStatus}</p>
+        </div>
+
+        <div class="card">
+          <h3>Your Alerts</h3>
+          <ul>
+            ${alerts
+              .map(
+                (a) => `
+              <li>
+                ${a.symbol.toUpperCase()} → ${a.target} ${
+                  a.triggered ? "✅ (Triggered)" : ""
+                }
+                <form method="POST" style="display:inline;">
+                  <input type="hidden" name="action" value="delete"/>
+                  <input type="hidden" name="id" value="${a.id}"/>
+                  <button class="btn" type="submit">🗑 Delete</button>
+                </form>
+                <form method="POST" style="display:inline;">
+                  <input type="hidden" name="action" value="edit"/>
+                  <input type="hidden" name="id" value="${a.id}"/>
+                  <input type="text" name="symbol" value="${a.symbol}" required/>
+                  <input type="number" step="any" name="target" value="${a.target}" required/>
+                  <button class="btn" type="submit">✏ Update</button>
+                </form>
+              </li>`
+              )
+              .join("")}
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Add New Alert</h3>
+          <form method="POST">
+            <input type="hidden" name="action" value="add"/>
+            <input type="text" name="symbol" placeholder="btc/eth" required/>
+            <input type="number" step="any" name="target" placeholder="Target Price" required/>
+            <button class="btn" type="submit">➕ Add</button>
+          </form>
+        </div>
+      </body>
+    </html>
+  `;
+  return new Response(html, { headers: { "Content-Type": "text/html" } });
+}
+
+// =============================
+// ADMIN PANEL
+// =============================
+async function handleAdminPanel(request, env, url) {
+  const password = url.searchParams.get("password");
+  if (password !== env.ADMIN_PASSWORD) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const list = await env.USER_DB.list({ prefix: "user:" });
+  let usersHtml = "";
+
+  for (const key of list.keys) {
+    const data = await env.USER_DB.get(key.name);
+    const user = JSON.parse(data);
+    usersHtml += `<li>User ${user.chatId} - ${user.vip ? "🌟 VIP" : "Free"}</li>`;
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head><title>Admin Panel</title></head>
+      <body style="font-family: Arial; padding: 20px;">
+        <h2>🔑 Admin Panel</h2>
+        <h3>Registered Users</h3>
+        <ul>${usersHtml}</ul>
+      </body>
+    </html>
+  `;
+  return new Response(html, { headers: { "Content-Type": "text/html" } });
+}
+
+// =============================
+// PRICE CHECKER (runs on cron)
+// =============================
+async function checkAlerts(env) {
+  const list = await env.USER_DB.list({ prefix: "alert:" });
+  if (!list.keys.length) return;
+
+  // Collect all symbols
+  const alerts = [];
+  for (const key of list.keys) {
+    const data = await env.USER_DB.get(key.name);
+    if (data) alerts.push(JSON.parse(data));
+  }
+
+  const symbols = [...new Set(alerts.map((a) => a.symbol))].join(",");
+  if (!symbols) return;
+
+  // Fetch live prices from CoinGecko
+  const res = await fetch(
+    `https://api.coingecko.com/api/v3/simple/price?ids=${symbols}&vs_currencies=usd`
+  );
+  const prices = await res.json();
+
+  for (const alert of alerts) {
+    if (alert.triggered) continue;
+    const price = prices[alert.symbol]?.usd;
+    if (!price) continue;
+
+    if (price >= alert.target) {
+      // Trigger alert
+      const userId = alert.id.split(":")[0]; // we’ll fix below
+      const userKeyParts = alert.id ? alert.id.split(":") : null;
+      const user = userKeyParts ? userKeyParts[1] : null;
+
+      await sendTelegramMessage(
+        env.BOT_TOKEN,
+        user || userId,
+        `🚨 Alert Triggered!\n${alert.symbol.toUpperCase()} hit $${alert.target}\n(Current: $${price})`
+      );
+
+      alert.triggered = true;
+      await env.USER_DB.put(
+        `alert:${user}:${alert.id}`,
+        JSON.stringify(alert)
+      );
+    }
+  }
+}
