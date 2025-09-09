@@ -1,206 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Crypto Alerts Bot</title>
-
-  <!-- 🟡 Telegram Mini App Meta Tags -->
-  <meta name="theme-color" content="#000000">
-  <meta name="telegram-web-app" content="true">
-
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #f1c40f;
-      min-height: 100vh;
-      background: url('https://i.ibb.co/z8SN4L3/golden-bitcoin-bg.jpg') no-repeat center center fixed;
-      background-size: cover;
-      position: relative;
-    }
-    body::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.75);
-      z-index: 0;
-    }
-
-    /* 🔄 Loading Screen */
-    #loader {
-      position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: #000;
-      display: flex; justify-content: center; align-items: center;
-      flex-direction: column;
-      z-index: 9999;
-    }
-    #loader img {
-      width: 100px; height: 100px;
-      animation: spin 2s linear infinite;
-    }
-    #loader p {
-      margin-top: 1rem;
-      color: #f1c40f;
-      font-size: 1.2rem;
-      font-weight: bold;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
-
-    /* Header */
-    header {
-      position: fixed; top: 0; left: 0; width: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      padding: 0.8rem;
-      text-align: center;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #f1c40f;
-      z-index: 2;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      margin-top: 4rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      padding: 1rem;
-    }
-    .card {
-      background: rgba(17, 17, 17, 0.9);
-      padding: 2rem;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.8);
-      width: 100%;
-      max-width: 420px;
-      text-align: center;
-    }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-    }
-    p {
-      font-size: 1rem;
-      margin-bottom: 2rem;
-      color: #ddd;
-    }
-
-    /* ✨ Animated Glowing Buttons */
-    .button {
-      display: block;
-      width: 100%;
-      background: #f1c40f;
-      color: #000;
-      padding: 1rem;
-      margin: 0.8rem 0;
-      border-radius: 12px;
-      text-decoration: none;
-      font-size: 1.2rem;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      position: relative;
-      animation: pulse 2s infinite;
-      box-shadow: 0 0 12px rgba(241, 196, 15, 0.6);
-    }
-    .button:hover {
-      background: #d4ac0d;
-      transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 0 20px rgba(241, 196, 15, 0.9);
-    }
-    @keyframes pulse {
-      0%   { box-shadow: 0 0 12px rgba(241, 196, 15, 0.6); }
-      50%  { box-shadow: 0 0 18px rgba(241, 196, 15, 0.8); }
-      100% { box-shadow: 0 0 12px rgba(241, 196, 15, 0.6); }
-    }
-
-    section { margin-top: 2rem; }
-    footer { margin-top: 2rem; font-size: 0.8rem; color: #888; }
-  </style>
+<meta charset="UTF-8">
+<title>Crypto Dashboard</title>
+<style>
+body { font-family: Arial; padding: 20px; }
+button { padding: 8px 12px; margin-top: 10px; }
+.modal { display:none; position:fixed; top:0; left:0;width:100%;height:100%; background: rgba(0,0,0,0.5); }
+.modal-content { background:white; padding:20px; margin:100px auto; width:300px; border-radius:8px; }
+</style>
 </head>
 <body>
-  <!-- 🔄 Loading Screen -->
-  <div id="loader">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg" alt="Bitcoin Logo">
-    <p>Loading Crypto Alerts...</p>
+<h1>Crypto Dashboard</h1>
+<button onclick="openModal()">+ Create Alert</button>
+<div class="modal" id="alertModal">
+  <div class="modal-content">
+    <h3>Create Alert</h3>
+    <input id="coin" placeholder="Coin (e.g., bitcoin)"><br><br>
+    <input id="type" placeholder="Type (Above/Below)"><br><br>
+    <input id="target" placeholder="Target Price"><br><br>
+    <button onclick="createAlert()">Save</button>
+    <button onclick="closeModal()">Cancel</button>
   </div>
-
-  <!-- Main Content -->
-  <header>🚀 Crypto Alerts Bot</header>
-
-  <div class="container" id="app" style="display:none;">
-    <div class="card">
-      <h1>Welcome</h1>
-      <p>Your gateway to presale alerts, airdrops, and VIP crypto signals.</p>
-
-      <a href="https://t.me/CryptoSniper_Alerts_Bot" class="button">▶ Start Bot</a>
-      <a href="#features" class="button">✨ Features</a>
-      <a href="#vip" class="button">💎 VIP Access</a>
-
-      <section id="features">
-        <h2>Features</h2>
-        <p>✔ Presale & airdrop alerts<br>
-           ✔ Real-time market updates<br>
-           ✔ Free + VIP options</p>
-      </section>
-
-      <section id="vip">
-        <h2>VIP Membership</h2>
-        <p>Unlock premium signals, early alerts, and exclusive insights.</p>
-        <a href="https://t.me/CryptoSniper_Alerts_Bot" class="button">🔥 Join VIP</a>
-      </section>
-
-      <footer>
-        <p>© 2025 Crypto Alerts Bot | Powered by Telegram</p>
-      </footer>
-    </div>
-  </div>
-
-  <script>
-    // Hide loader after 2.5 seconds
-    window.addEventListener("load", () => {
-      setTimeout(() => {
-        document.getElementById("loader").style.display = "none";
-        document.getElementById("app").style.display = "block";
-      }, 2500);
-    });
-  </script>
-
-  <!-- Telegram Web App SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand(); // fullscreen mode
-
-    // Read telegram user data
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-      // 1. Display greeting
-      const greeting = document.createElement("p");
-      greeting.textContent = `👋 Welcome, ${user.first_name || user.username}!`;
-      greeting.style.color = "#f1c40f";
-      greeting.style.fontSize = "1.1rem";
-      document.querySelector(".card").prepend(greeting);
-
-      // 2. Register user in KV via your Worker
-      fetch("https://crypto-alerts-worker.premiumrays01.workers.dev", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          username: user.username || ""
-        })
-      })
-      .then(res => console.log("registration status:", res.status))
-      .catch(err => console.error("Backend error:", err));
-    }
-  </script>
+</div>
+<script>
+function openModal() { document.getElementById('alertModal').style.display='block'; }
+function closeModal() { document.getElementById('alertModal').style.display='none'; }
+async function createAlert() {
+  const coin = document.getElementById('coin').value;
+  const type = document.getElementById('type').value;
+  const target = document.getElementById('target').value;
+  await fetch('/alert', { method:'POST', headers:{'x-user-id':'demo-user','Content-Type':'application/json'}, body: JSON.stringify({coin,type,target}) });
+  alert('Alert created!'); closeModal();
+}
+</script>
 </body>
 </html>
