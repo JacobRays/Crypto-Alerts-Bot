@@ -3,36 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <title>Crypto Alerts Bot Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
-body { font-family: Arial; padding: 20px; }
-button { padding: 8px 12px; margin-top: 10px; }
-.modal { display:none; position:fixed; top:0; left:0;width:100%;height:100%; background: rgba(0,0,0,0.5); }
-.modal-content { background:white; padding:20px; margin:100px auto; width:300px; border-radius:8px; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f111a;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+  }
+
+  h1 { text-align: center; margin-bottom: 20px; }
+  .vip-status { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: 600; margin-bottom: 20px; }
+  .vip-status.vip { background: linear-gradient(90deg, #f9d423, #ff4e50); color: #000; }
+  .vip-status.free { background: #444; color: #fff; }
+
+  .alerts-list { margin-bottom: 20px; }
+  .alerts-list li {
+    background: #1f2233;
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  button.primary { background: #ff4e50; color: #fff; }
+  button.primary:hover { background: #f9d423; color: #000; }
+
+  /* Modal */
+  .modal { display:none; position:fixed; top:0; left:0;width:100%;height:100%; background: rgba(0,0,0,0.7); z-index: 1000; }
+  .modal-content {
+    background:#1f2233; padding:30px; margin:100px auto; width:300px;
+    border-radius:15px; text-align:center;
+    box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  }
+  .modal-content input {
+    width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 10px;
+    border: none; outline: none;
+    background: #0f111a; color: #fff;
+  }
 </style>
 </head>
 <body>
-<h1>Crypto Alerts Bot – Dashboard</h1>
-<button onclick="openModal()">+ Create Alert</button>
+
+<h1>Crypto Alerts Bot</h1>
+<div class="vip-status vip" id="vipStatus">VIP User</div>
+
+<h3>My Alerts</h3>
+<ul class="alerts-list" id="alertsList">
+  <!-- Alerts will be loaded here dynamically -->
+</ul>
+
+<button class="primary" onclick="openModal()">+ Create Alert</button>
+
+<!-- Modal -->
 <div class="modal" id="alertModal">
   <div class="modal-content">
     <h3>Create Alert</h3>
-    <input id="coin" placeholder="Coin (e.g., bitcoin)"><br><br>
-    <input id="type" placeholder="Type (Above/Below)"><br><br>
-    <input id="target" placeholder="Target Price"><br><br>
-    <button onclick="createAlert()">Save</button>
-    <button onclick="closeModal()">Cancel</button>
+    <input id="coin" placeholder="Coin (e.g., bitcoin)">
+    <input id="type" placeholder="Type (Above/Below)">
+    <input id="target" placeholder="Target Price">
+    <button class="primary" onclick="createAlert()">Save</button>
+    <button style="margin-top:10px; background:#555; color:#fff;" onclick="closeModal()">Cancel</button>
   </div>
 </div>
+
 <script>
+async function loadAlerts() {
+  const res = await fetch('/alert', { headers: { 'x-user-id': 'demo-user' }});
+  const alerts = await res.json();
+  const list = document.getElementById('alertsList');
+  list.innerHTML = alerts.map(a => `<li>${a.coin} ${a.type} $${a.target}</li>`).join('');
+}
+loadAlerts();
+
 function openModal() { document.getElementById('alertModal').style.display='block'; }
 function closeModal() { document.getElementById('alertModal').style.display='none'; }
+
 async function createAlert() {
   const coin = document.getElementById('coin').value;
   const type = document.getElementById('type').value;
   const target = document.getElementById('target').value;
-  await fetch('/alert', { method:'POST', headers:{'x-user-id':'demo-user','Content-Type':'application/json'}, body: JSON.stringify({coin,type,target}) });
-  alert('Alert created!'); closeModal();
+  if(!coin||!type||!target){ alert('Fill all fields!'); return; }
+
+  await fetch('/alert', { 
+    method:'POST', 
+    headers:{ 'x-user-id':'demo-user','Content-Type':'application/json' },
+    body: JSON.stringify({coin,type,target})
+  });
+  alert('Alert created!'); 
+  closeModal();
+  loadAlerts();
 }
 </script>
+
 </body>
 </html>
