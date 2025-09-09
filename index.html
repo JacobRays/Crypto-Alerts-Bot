@@ -41,10 +41,12 @@ button { padding:10px 16px; border:none; border-radius:10px; cursor:pointer; fon
 button:hover { background:#f9d423; color:#000; }
 
 .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); z-index:1000; }
-.modal-content { background:#1f2233; padding:30px; margin:100px auto; width:300px; border-radius:15px; text-align:center; box-shadow:0 0 20px rgba(0,0,0,0.6); }
+.modal-content { background:#1f2233; padding:30px; margin:100px auto; width:320px; border-radius:15px; text-align:center; box-shadow:0 0 20px rgba(0,0,0,0.6); }
 .modal-content input { width:100%; padding:10px; margin-bottom:15px; border-radius:10px; border:none; outline:none; background:#0f111a; color:#fff; }
 .vip-upsell { background:#ff4e50; padding:8px 12px; border-radius:10px; margin-top:10px; display:block; cursor:pointer; font-weight:600; color:#fff; text-decoration:none; }
 .vip-upsell:hover { background:#f9d423; color:#000; }
+.crypto-upgrade { background:#00aaff; padding:8px 12px; border-radius:10px; margin-top:5px; display:block; cursor:pointer; font-weight:600; color:#fff; text-decoration:none; }
+.crypto-upgrade:hover { background:#4ec5ff; color:#000; }
 </style>
 </head>
 <body>
@@ -88,89 +90,120 @@ button:hover { background:#f9d423; color:#000; }
     <input id="target" placeholder="Target Price">
     <button onclick="createAlert()">Save</button>
     <button style="margin-top:10px; background:#555; color:#fff;" onclick="closeModal()">Cancel</button>
-    <a href="#" class="vip-upsell" id="vipUpsell" style="display:none;">Upgrade to VIP for unlimited alerts</a>
+
+    <!-- VIP Upgrade Buttons -->
+    <a href="https://paypal.me/premiumrays01/5" target="_blank" class="vip-upsell" id="vipUpsell" style="display:none;">Upgrade to VIP for unlimited alerts ($5)</a>
+    <div id="cryptoUpgradeContainer" style="display:none;">
+      <span style="display:block; margin-top:10px;">Or pay with crypto:</span>
+      <a href="#" class="crypto-upgrade">BTC: YOUR_BTC_ADDRESS</a>
+      <a href="#" class="crypto-upgrade">TRC20 USDT: YOUR_USDT_ADDRESS</a>
+    </div>
   </div>
 </div>
 
 <script>
 let isVIP = false;
 const MAX_FREE_ALERTS = 2;
+const userId = 'demo-user'; // Replace with actual user identifier
 
 async function loadDashboard() {
-  const userId = 'demo-user';
-  
-  // Fetch user info
-  const userRes = await fetch(`/user?id=${userId}`);
-  const userData = await userRes.json();
-  isVIP = userData.vip;
+  try {
+    // Fetch user info
+    const userRes = await fetch(`/user?id=${userId}`);
+    const userData = await userRes.json();
+    isVIP = userData.vip;
 
-  document.getElementById('vipStatus').textContent = isVIP ? "VIP User" : "Free User";
-  document.getElementById('vipStatus').className = isVIP ? "vip-status vip" : "vip-status free";
+    document.getElementById('vipStatus').textContent = isVIP ? "VIP User" : "Free User";
+    document.getElementById('vipStatus').className = isVIP ? "vip-status vip" : "vip-status free";
 
-  // Alerts
-  const alerts = await (await fetch('/alert', { headers:{ 'x-user-id': userId }})).json();
-  document.getElementById('alertsList').innerHTML = alerts.map(a => `<li>${a.coin} ${a.type} $${a.target}</li>`).join('');
+    // Alerts
+    const alerts = await (await fetch('/alert', { headers:{ 'x-user-id': userId }})).json();
+    document.getElementById('alertsList').innerHTML = alerts.map(a => `<li>${a.coin} ${a.type} $${a.target}</li>`).join('');
 
-  // Show VIP upsell if free user exceeded limit
-  if (!isVIP && alerts.length >= MAX_FREE_ALERTS) {
-    document.getElementById('vipUpsell').style.display = "block";
-  } else {
-    document.getElementById('vipUpsell').style.display = "none";
-  }
+    // Show VIP upsell if free user exceeded limit
+    if(!isVIP && alerts.length >= MAX_FREE_ALERTS){
+      document.getElementById('vipUpsell').style.display = "block";
+      document.getElementById('cryptoUpgradeContainer').style.display = "block";
+    } else {
+      document.getElementById('vipUpsell').style.display = "none";
+      document.getElementById('cryptoUpgradeContainer').style.display = "none";
+    }
 
-  // Signals
-  const signals = (await (await fetch('/signals')).json()).signals || [];
-  document.getElementById('signalsList').innerHTML = signals.map(s => `<li><span class="badge signal">Signal</span> ${s.channel}: ${s.message}</li>`).join('');
+    // Signals
+    const signals = (await (await fetch('/signals')).json()).signals || [];
+    document.getElementById('signalsList').innerHTML = signals.map(s => `<li><span class="badge signal">Signal</span> ${s.channel}: ${s.message}</li>`).join('');
 
-  // MemeRadar
-  const memes = (await (await fetch('/memeradar')).json()).topCoins || [];
-  document.getElementById('memesList').innerHTML = memes.map(m => `<li><span class="badge meme">Meme</span> ${m.name||m.symbol.toUpperCase()} – ${m.price_change_percentage_24h?.toFixed(2)}%</li>`).join('');
+    // MemeRadar
+    const memes = (await (await fetch('/memeradar')).json()).topCoins || [];
+    document.getElementById('memesList').innerHTML = memes.map(m => `<li><span class="badge meme">Meme</span> ${m.name||m.symbol.toUpperCase()} – ${m.price_change_percentage_24h?.toFixed(2)}%</li>`).join('');
 
-  // Alpha Feed
-  const alpha = (await (await fetch('/alphafeed')).json()).alphaFeed || [];
-  document.getElementById('alphaList').innerHTML = alpha.map(a => `<li><span class="badge alpha">Alpha</span> ${a.trader}: ${a.insight} (Watchlist: ${a.watchlist.join(', ')})</li>`).join('');
+    // Alpha Feed
+    const alpha = (await (await fetch('/alphafeed')).json()).alphaFeed || [];
+    document.getElementById('alphaList').innerHTML = alpha.map(a => `<li><span class="badge alpha">Alpha</span> ${a.trader}: ${a.insight} (Watchlist: ${a.watchlist.join(', ')})</li>`).join('');
 
-  // Events
-  const events = (await (await fetch('/events')).json()).events || [];
-  document.getElementById('eventsList').innerHTML = events.map(e => `<li><span class="badge event">Event</span> ${e.event} – ${e.date}</li>`).join('');
+    // Events
+    const events = (await (await fetch('/events')).json()).events || [];
+    document.getElementById('eventsList').innerHTML = events.map(e => `<li><span class="badge event">Event</span> ${e.event} – ${e.date}</li>`).join('');
+  } catch(err){ console.error(err); }
 }
 loadDashboard();
 
 // Collapsible sections
-document.querySelectorAll('.section h3').forEach(h3 => {
-  h3.addEventListener('click', () => {
+document.querySelectorAll('.section h3').forEach(h3=>{
+  h3.addEventListener('click',()=>{
     const ul = h3.nextElementSibling;
-    ul.style.display = (ul.style.display==='block') ? 'none' : 'block';
-    h3.querySelector('span').textContent = (ul.style.display==='block') ? '▲' : '▼';
+    ul.style.display = (ul.style.display==='block')?'none':'block';
+    h3.querySelector('span').textContent = (ul.style.display==='block')?'▲':'▼';
   });
 });
 
-function openModal() { document.getElementById('alertModal').style.display='block'; }
-function closeModal() { document.getElementById('alertModal').style.display='none'; }
+// Modal
+function openModal(){ document.getElementById('alertModal').style.display='block'; }
+function closeModal(){ document.getElementById('alertModal').style.display='none'; }
 
-async function createAlert() {
+// Create Alert
+async function createAlert(){
   const coin = document.getElementById('coin').value;
   const type = document.getElementById('type').value;
   const target = document.getElementById('target').value;
   if(!coin||!type||!target){ alert('Fill all fields!'); return; }
 
-  const userId = 'demo-user';
-  const res = await fetch('/alert', {
+  const res = await fetch('/alert',{
     method:'POST',
     headers:{ 'x-user-id':userId,'Content-Type':'application/json' },
     body:JSON.stringify({coin,type,target})
   });
   const data = await res.json();
 
-  if(data.error) {
-    document.getElementById('vipUpsell').style.display = "block";
+  if(data.error){
+    document.getElementById('vipUpsell').style.display="block";
+    document.getElementById('cryptoUpgradeContainer').style.display="block";
     alert(data.error);
-  } else {
-    alert('Alert created!');
-    closeModal();
-    loadDashboard();
+    return;
   }
+
+  closeModal();
+  loadDashboard();
 }
+
+// VIP Auto-Refresh every 10s
+async function checkVIPStatus(){
+  try{
+    const res = await fetch(`/user?id=${userId}`);
+    const data = await res.json();
+    const previousVIP = isVIP;
+    isVIP = data.vip;
+    if(isVIP && !previousVIP){
+      document.getElementById('vipStatus').textContent="VIP User";
+      document.getElementById('vipStatus').className="vip-status vip";
+      document.getElementById('vipUpsell').style.display="none";
+      document.getElementById('cryptoUpgradeContainer').style.display="none";
+      alert("🎉 Congratulations! You are now VIP.");
+    }
+  }catch(err){console.error(err);}
+}
+setInterval(checkVIPStatus,10000);
+checkVIPStatus();
 </script>
 </body>
 </html>
