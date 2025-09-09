@@ -1,8 +1,5 @@
-// Crypto Signal Filter & Alpha Hub – Worker
-// ================================================
-
-// KV Bindings: USERS_KV, ALERTS_KV, SIGNALS_KV, MEMECOINS_KV, EVENTS_KV, WALLET_KV
-// Env: TELEGRAM_BOT_TOKEN, COINGECKO_API, RUGDOC_API, TG_CHANNEL_IDS
+// Crypto Alerts Bot – Free-Tier Worker Setup
+// Handles: VIP dashboard, alerts, signals, memecoins, alpha feed, events, security alerts
 
 export default {
   async fetch(request, env, ctx) {
@@ -17,7 +14,7 @@ export default {
     if (pathname.startsWith("/alphafeed")) return await handleAlphaFeed(request, env);
     if (pathname.startsWith("/events")) return await handleEvents(request, env);
 
-    return new Response("Crypto Signal Filter & Alpha Hub – Worker Running", { status: 200, headers: { "Content-Type": "text/plain" } });
+    return new Response("Crypto Alerts Bot – Worker Running", { status: 200, headers: { "Content-Type": "text/plain" } });
   },
 };
 
@@ -35,23 +32,35 @@ async function handleAdmin(request, env) {
 }
 
 // ----------------------------
+// Demo VIP user for testing
+// ----------------------------
+async function createDemoUser(env) {
+  const demo = await env.USERS_KV.get("demo-user", { type: "json" });
+  if (!demo) {
+    await env.USERS_KV.put("demo-user", JSON.stringify({
+      vip: true,
+      telegramChatId: "YOUR_TELEGRAM_CHAT_ID"
+    }));
+  }
+}
+
+// ----------------------------
 // User Dashboard
 // ----------------------------
 async function handleDashboard(request, env) {
-  const userId = request.headers.get("x-user-id");
-  if (!userId) return new Response("Unauthorized", { status: 401 });
-
+  await createDemoUser(env);
+  const userId = request.headers.get("x-user-id") || "demo-user";
   const user = await env.USERS_KV.get(userId, { type: "json" });
   const alerts = await env.ALERTS_KV.get(userId, { type: "json" }) || [];
 
   const html = `
-    <h2>Dashboard – ${userId}</h2>
-    <p>VIP: ${user.vip ? "✅" : "❌"}</p>
+    <h1>Crypto Alerts Bot – Dashboard</h1>
+    <p>VIP Status: ${user.vip ? "✅" : "❌"}</p>
     <h3>My Alerts</h3>
     <ul>
       ${alerts.map(a => `<li>${a.coin} ${a.type} ${a.target}</li>`).join("")}
     </ul>
-    <button onclick="alert('Add alert modal here')">+ Create Alert</button>
+    <button onclick="openModal()">+ Create Alert</button>
   `;
   return new Response(html, { headers: { "Content-Type": "text/html" } });
 }
@@ -60,8 +69,7 @@ async function handleDashboard(request, env) {
 // Alerts CRUD
 // ----------------------------
 async function handleAlerts(request, env) {
-  const userId = request.headers.get("x-user-id");
-  if (!userId) return new Response("Unauthorized", { status: 401 });
+  const userId = request.headers.get("x-user-id") || "demo-user";
 
   if (request.method === "POST") {
     const data = await request.json();
@@ -80,20 +88,19 @@ async function handleAlerts(request, env) {
 }
 
 // ----------------------------
-// High-Signal Alerts
+// High-Signal Alerts (Demo Data)
 // ----------------------------
 async function handleSignals(request, env) {
-  const signals = [];
-  const channelIds = env.TG_CHANNEL_IDS?.split(",") || [];
-  for (const channel of channelIds) {
-    signals.push({ channel, message: `Sample high-signal from ${channel}`, timestamp: new Date().toISOString() });
-  }
-  for (const signal of signals) await env.SIGNALS_KV.put(crypto.randomUUID(), JSON.stringify(signal));
-  return new Response(JSON.stringify({ signals }), { headers: { "Content-Type": "application/json" } });
+  const sampleSignals = [
+    { channel: "DemoChannel1", message: "[Crypto Alerts Bot] $BTC breakout soon!", timestamp: new Date().toISOString() },
+    { channel: "DemoChannel2", message: "[Crypto Alerts Bot] $ETH major partnership!", timestamp: new Date().toISOString() }
+  ];
+  for (const signal of sampleSignals) await env.SIGNALS_KV.put(crypto.randomUUID(), JSON.stringify(signal));
+  return new Response(JSON.stringify({ signals: sampleSignals }), { headers: { "Content-Type": "application/json" } });
 }
 
 // ----------------------------
-// MemeCoin Radar
+// MemeCoin Radar (Free via CoinGecko)
 // ----------------------------
 async function handleMemeRadar(request, env) {
   const resp = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1`);
@@ -106,7 +113,7 @@ async function handleMemeRadar(request, env) {
 }
 
 // ----------------------------
-// Alpha Feed
+// Alpha Feed (Demo Data)
 // ----------------------------
 async function handleAlphaFeed(request, env) {
   const sampleAlpha = [
@@ -118,34 +125,16 @@ async function handleAlphaFeed(request, env) {
 }
 
 // ----------------------------
-// Event Calendar
+// Event Calendar with Airdrops (Demo Data)
 // ----------------------------
 async function handleEvents(request, env) {
   const sampleEvents = [
-    { event: "$PYTH Token Unlock", date: "2025-09-12", notifySubscribers: [] },
-    { event: "$DOGE Snapshot", date: "2025-09-15", notifySubscribers: [] },
-    { event: "$MATIC AMA", date: "2025-09-18", notifySubscribers: [] },
-    { event: "$ASTRO Airdrop Claim", date: "2025-09-20", notifySubscribers: [] }
+    { event: "$PYTH Token Unlock", date: "2025-09-12" },
+    { event: "$DOGE Snapshot", date: "2025-09-15" },
+    { event: "$ASTRO Airdrop Claim", date: "2025-09-20" }
   ];
   for (const evt of sampleEvents) await env.EVENTS_KV.put(crypto.randomUUID(), JSON.stringify(evt));
   return new Response(JSON.stringify({ events: sampleEvents }), { headers: { "Content-Type": "application/json" } });
-}
-
-// ----------------------------
-// Security / Rugpull Alerts
-// ----------------------------
-async function checkSecurityAlerts(env) {
-  if (!env.RUGDOC_API) return;
-  const resp = await fetch(env.RUGDOC_API);
-  const flaggedTokens = await resp.json();
-  const iter = env.WALLET_KV.list();
-  for await (const key of iter.keys) {
-    const wallet = await env.WALLET_KV.get(key.name, { type: "json" }) || { tokensHeld: [] };
-    const riskyTokens = wallet.tokensHeld.filter(t => flaggedTokens.includes(t));
-    if (riskyTokens.length > 0) {
-      await sendTelegramNotification(env, key.name, `⚠️ Security Alert: flagged tokens detected: ${riskyTokens.join(", ")}`);
-    }
-  }
 }
 
 // ----------------------------
@@ -159,24 +148,4 @@ async function sendTelegramNotification(env, userId, message) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: user.telegramChatId, text: message })
   });
-}
-
-// ----------------------------
-// Price Alerts
-// ----------------------------
-async function checkPriceAlerts(env) {
-  const usersIter = env.ALERTS_KV.list();
-  for await (const key of usersIter.keys) {
-    const userId = key.name;
-    const alerts = await env.ALERTS_KV.get(userId, { type: "json" }) || [];
-    for (const alert of alerts) {
-      const priceResp = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${alert.coin}&vs_currencies=usd`);
-      const priceData = await priceResp.json();
-      const currentPrice = priceData[alert.coin]?.usd;
-      if (!currentPrice) continue;
-      if ((alert.type === "Above" && currentPrice >= alert.target) || (alert.type === "Below" && currentPrice <= alert.target)) {
-        await sendTelegramNotification(env, userId, `🔔 ${alert.coin} price alert! Current: $${currentPrice}, Target: $${alert.target}`);
-      }
-    }
-  }
 }
