@@ -1,14 +1,28 @@
-name = "crypto-alerts-worker"
+name = "crypto-signal-hub"
 main = "worker.js"
-compatibility_date = "2024-09-01"
-
-kv_namespaces = [
-  { binding = "USER_DB", id = "77306c724f89400685ec6a210d672a2d" }
-]
+compatibility_date = "2025-09-09"
+type = "javascript"
 
 [vars]
-BOT_TOKEN = "8209980143:AAEqYImLz5sniYx5cNCk0-yKX8wmiS9s9-g"
-ADMIN_PASSWORD = "Premium01"
-WORKER_DOMAIN = "crypto-alerts-worker.premiumrays01.workers.dev"
-[triggers]
-crons = ["*/5 * * * *"] # every 5 min
+TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"
+COINGECKO_API = "https://api.coingecko.com/api/v3"
+RUGDOC_API = "YOUR_RUGDOC_FLAGGED_TOKENS_API"
+TG_CHANNEL_IDS = "CHANNEL_ID_1,CHANNEL_ID_2"
+
+kv_namespaces = [
+  { binding = "USERS_KV", id = "YOUR_USERS_KV_ID" },
+  { binding = "ALERTS_KV", id = "YOUR_ALERTS_KV_ID" },
+  { binding = "SIGNALS_KV", id = "YOUR_SIGNALS_KV_ID" },
+  { binding = "MEMECOINS_KV", id = "YOUR_MEMECOINS_KV_ID" },
+  { binding = "EVENTS_KV", id = "YOUR_EVENTS_KV_ID" },
+  { binding = "WALLET_KV", id = "YOUR_WALLET_KV_ID" }
+]
+
+[[triggers.crons]]
+schedule = "*/1 * * * *"
+
+[[triggers.crons]]
+schedule = "*/5 * * * *"
+
+[[triggers.crons]]
+schedule = "*/30 * * * *"
