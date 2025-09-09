@@ -1,4 +1,4 @@
-const TELEGRAM_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN";
+const TELEGRAM_TOKEN = "8209980143:AAEqYImLz5sniYx5cNCk0-yKX8wmiS9s9-g";
 const TELEGRAM_CHAT_PREFIX = "@demo_user_"; // or store per-user
 const MAX_FREE_ALERTS = 2;
 
