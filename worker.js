@@ -1,12 +1,14 @@
 const TELEGRAM_TOKEN = "8209980143:AAEqYImLz5sniYx5cNCk0-yKX8wmiS9s9-g";
-const TELEGRAM_CHAT_PREFIX = "@demo_user_"; // or store per-user
+const TELEGRAM_CHAT_PREFIX = "@demo_user_"; 
 const MAX_FREE_ALERTS = 2;
+
+// Admin secret for manual VIP upgrade
+const ADMIN_PASSWORD = "Premium01";
 
 // ----------------------------
 // Helper: Send Telegram notification
 // ----------------------------
 async function sendTelegramNotification(env, userId, message) {
-  // Replace this with real mapping of userId -> Telegram chat_id
   const chat_id = TELEGRAM_CHAT_PREFIX + userId;
   await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
     method: "POST",
@@ -37,14 +39,14 @@ async function handleAlerts(request, env) {
   }
 
   if (request.method === "GET") {
-    return new Response(JSON.stringify(alerts), { headers: { "Content-Type":"application/json" } });
+    return new Response(JSON.stringify(alerts), { headers: { "Content-Type": "application/json" } });
   }
 
   return new Response("Method not allowed", { status:405 });
 }
 
 // ----------------------------
-// Fetch Signals / MemeRadar / Alpha Feed / Events
+// Signals / MemeRadar / Alpha Feed / Events
 // ----------------------------
 async function handleDataRequests(request, env) {
   const url = new URL(request.url);
@@ -73,6 +75,23 @@ async function handleDataRequests(request, env) {
 }
 
 // ----------------------------
+// VIP Upgrade Endpoint (Manual/Admin)
+// ----------------------------
+async function handleVIPUpgrade(request, env) {
+  const url = new URL(request.url);
+  const userId = url.searchParams.get("userId");
+  const secret = url.searchParams.get("password");
+
+  if (!userId || secret !== ADMIN_PASSWORD) {
+    return new Response(JSON.stringify({ error:"Unauthorized" }), { status:401 });
+  }
+
+  // Upgrade user to VIP
+  await env.USERS_KV.put(userId, JSON.stringify({ vip:true, upgradedAt:new Date().toISOString() }));
+  return new Response(JSON.stringify({ success:true, message:`User ${userId} upgraded to VIP` }), { status:200 });
+}
+
+// ----------------------------
 // Worker Fetch Event
 // ----------------------------
 export default {
@@ -83,8 +102,8 @@ export default {
     if (url.pathname.startsWith("/signals") || url.pathname.startsWith("/memeradar") || url.pathname.startsWith("/alphafeed") || url.pathname.startsWith("/events")) {
       return handleDataRequests(request, env);
     }
+    if (url.pathname.startsWith("/upgrade-vip")) return handleVIPUpgrade(request, env);
 
-    // Simple dashboard root redirect or 404
     if (url.pathname === "/") {
       return new Response("Crypto Alerts Bot Worker Running!", { status:200 });
     }
@@ -99,14 +118,12 @@ export default {
 export async function scheduled(event, env, ctx) {
   console.log("Crypto Alerts Bot: Running price-check loop...");
 
-  // 1️⃣ Get all users
   const users = [];
   for await (const key of env.USERS_KV.list()) {
     const user = await env.USERS_KV.get(key.name, { type:"json" });
     if(user) users.push({ id:key.name, ...user });
   }
 
-  // 2️⃣ For each user, check alerts
   for (const user of users) {
     let alerts = (await env.ALERTS_KV.get(user.id, { type:"json" })) || [];
     for (const alert of alerts) {
@@ -131,7 +148,6 @@ export async function scheduled(event, env, ctx) {
         console.error("Price-check error:", err);
       }
     }
-    // Save back updated alerts
     await env.ALERTS_KV.put(user.id, JSON.stringify(alerts));
   }
 }
