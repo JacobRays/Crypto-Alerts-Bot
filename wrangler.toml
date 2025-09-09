@@ -1,12 +1,11 @@
-name = "crypto-signal-hub"
+name = "crypto-alerts-worker"
 main = "worker.js"
 compatibility_date = "2025-09-09"
 type = "javascript"
 
 [vars]
-TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"
+TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
 COINGECKO_API = "https://api.coingecko.com/api/v3"
-RUGDOC_API = "YOUR_RUGDOC_FLAGGED_TOKENS_API"
 TG_CHANNEL_IDS = "CHANNEL_ID_1,CHANNEL_ID_2"
 
 kv_namespaces = [
@@ -18,11 +17,5 @@ kv_namespaces = [
   { binding = "WALLET_KV", id = "YOUR_WALLET_KV_ID" }
 ]
 
-[[triggers.crons]]
-schedule = "*/1 * * * *"
-
-[[triggers.crons]]
-schedule = "*/5 * * * *"
-
-[[triggers.crons]]
-schedule = "*/30 * * * *"
+[triggers]
+crons = ["*/5 * * * *"]  # Every 5 min – free-tier worker cron
