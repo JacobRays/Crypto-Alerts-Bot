@@ -7,6 +7,6 @@ kv_namespaces = [
 ]
 
 [vars]
-BOT_TOKEN = "your-telegram-bot-token"
-ADMIN_PASSWORD = "your-admin-password"
+BOT_TOKEN = "8209980143:AAEqYImLz5sniYx5cNCk0-yKX8wmiS9s9-g"
+ADMIN_PASSWORD = "Premium01"
 WORKER_DOMAIN = "crypto-alerts-worker.premiumrays01.workers.dev"
